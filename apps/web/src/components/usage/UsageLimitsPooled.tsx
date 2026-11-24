@@ -308,8 +308,6 @@ function PoolSegment({
   readonly refillPercent: number;
   readonly color: string;
   readonly now: number;
-  readonly index: number;
-  readonly showAccountName: boolean;
 }) {
   return account.redeem ? (
     <RedeemableSegment account={account} redeemAt={account.redeem} {...props} />
@@ -355,23 +353,22 @@ function SegmentTriggers({
   refillPercent,
   color,
   now,
-  index,
-  showAccountName,
 }: SegmentPayload & {
   readonly refillPercent: number;
   readonly color: string;
   readonly now: number;
-  readonly index: number;
-  readonly showAccountName: boolean;
 }) {
   const popover = use(SegmentPopoverContext) ?? undefined;
   const payload: SegmentPayload = { account, window, reset, redeem };
   const remaining = remainingPercent(window);
   const timeLeft = paceRemainingPercent(window, now);
   const [segmentRef, paceMark] = usePaceMark(timeLeft);
+  const timestampFormat = usePrimarySettings((settings) => settings.timestampFormat);
   const m = useMessages();
   const resetsIn = formatResetsIn(window, now, m);
-  const refillIn = formatResetsIn(window, now, m, "refill");
+  const resetsAt = window.resetsAt
+    ? formatUpcomingTimestamp(window.resetsAt, timestampFormat, now, undefined, m)
+    : null;
   const credits = account.limits.resetCredits?.availableCount ?? 0;
   const gt = useGT();
   const segmentLabel = [
@@ -381,6 +378,7 @@ function SegmentTriggers({
       remaining,
     }),
     resetsIn,
+    resetsAt,
     timeLeft === null ? null : gt("{timeLeft}% of the window left", { timeLeft }),
     credits
       ? gt(
@@ -392,31 +390,46 @@ function SegmentTriggers({
     .filter(Boolean)
     .join(", ");
   return (
-    <>
-      <PopoverTrigger
-        handle={popover}
-        payload={payload}
-        openOnHover
-        render={
-          <button
-            ref={segmentRef}
-            type="button"
-            style={{ gridColumn: index, gridRow: 1, ...paceMark?.gappedTrack }}
-            aria-label={segmentLabel}
-            className="relative h-5 min-w-0 cursor-pointer rounded-md bg-muted text-start outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[popup-open]:ring-1 data-[popup-open]:ring-inset data-[popup-open]:ring-border @2xl/pool:h-8"
-          />
-        }
+    <PopoverTrigger
+      handle={popover}
+      payload={payload}
+      openOnHover
+      render={
+        <button
+          type="button"
+          aria-label={segmentLabel}
+          className="flex min-w-0 cursor-pointer flex-col gap-1.5 rounded-md border border-border/60 px-2.5 py-2 text-start outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring data-[popup-open]:bg-muted/50"
+        />
+      }
+    >
+      <span className="flex min-w-0 items-center gap-2 text-xs">
+        <AccountName account={account} className="min-w-0 truncate font-medium text-foreground" />
+        <span className="ms-auto shrink-0 font-semibold text-foreground tabular-nums">
+          {remaining}%
+        </span>
+        {credits ? (
+          <span aria-hidden className="inline-flex shrink-0 items-center gap-0.5 font-semibold">
+            <TicketIcon className="size-3" />
+            {credits}
+          </span>
+        ) : null}
+      </span>
+      <span
+        ref={segmentRef}
+        aria-hidden
+        className="relative h-2 rounded-md bg-muted"
+        style={paceMark?.gappedTrack}
       >
-        <div aria-hidden className="absolute inset-0 overflow-hidden rounded-md">
+        <span aria-hidden className="absolute inset-0 overflow-hidden rounded-md">
           {/* Clipped inside the rounded clip so the bar's own corners keep their antialiasing. */}
-          <div className="absolute inset-0" style={paceMark?.gap}>
-            <div
+          <span className="absolute inset-0" style={paceMark?.gap}>
+            <span
               aria-hidden
               className="absolute inset-y-0 left-0 rounded-md opacity-35"
               style={{ width: `${remaining}%`, backgroundColor: color }}
             />
             {remaining < 100 && reset && refillPercent > 0 ? (
-              <div
+              <span
                 aria-hidden
                 className="absolute inset-y-0 right-0 opacity-20"
                 style={{
@@ -427,8 +440,8 @@ function SegmentTriggers({
                 }}
               />
             ) : null}
-          </div>
-        </div>
+          </span>
+        </span>
         {paceMark ? (
           <span
             aria-hidden
@@ -436,108 +449,17 @@ function SegmentTriggers({
             style={paceMark.tick}
           />
         ) : null}
-        <span
-          aria-hidden
-          className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-md text-3xs leading-none font-semibold text-foreground/80 tabular-nums @2xl/pool:hidden"
-        >
-          {index}
+      </span>
+      {resetsIn ? (
+        <span className="flex flex-wrap items-baseline gap-x-2 text-xs text-muted-foreground tabular-nums">
+          {resetsAt && window.resetsAt ? (
+            <time dateTime={window.resetsAt} className="font-medium text-foreground">
+              {resetsAt}
+            </time>
+          ) : null}
+          <span>{resetsIn}</span>
         </span>
-        <div className="relative hidden h-full min-w-0 items-center gap-1.5 overflow-hidden rounded-md px-2 text-xs @2xl/pool:flex">
-          {showAccountName ? (
-            <AccountName
-              account={account}
-              className="min-w-0 truncate font-medium text-foreground"
-            />
-          ) : null}
-          {/* A single-account bar repeats the headline percentage. */}
-          {showAccountName ? (
-            <span className="shrink-0 font-semibold text-foreground tabular-nums">
-              {remaining}%
-            </span>
-          ) : null}
-          {resetsIn || credits ? (
-            <span className="ms-auto flex min-w-0 items-center gap-1.5 overflow-hidden rounded-sm bg-background/85 px-1.5 py-0.5 text-2xs whitespace-nowrap text-foreground tabular-nums">
-              {refillIn ?? ""}
-              {credits ? (
-                <>
-                  {resetsIn ? (
-                    <span aria-hidden className="text-muted-foreground">
-                      ·
-                    </span>
-                  ) : null}
-                  <span aria-hidden className="inline-flex items-center gap-0.5 font-semibold">
-                    <TicketIcon className="size-3" aria-hidden />
-                    {credits}
-                  </span>
-                </>
-              ) : null}
-            </span>
-          ) : null}
-        </div>
-      </PopoverTrigger>
-      <LegendRow payload={payload} color={color} now={now} index={index} />
-    </>
-  );
-}
-
-function LegendRow({
-  payload,
-  color,
-  now,
-  index,
-}: {
-  readonly payload: SegmentPayload;
-  readonly color: string;
-  readonly now: number;
-  readonly index: number;
-}) {
-  const popover = use(SegmentPopoverContext) ?? undefined;
-  const { account, window } = payload;
-  const remaining = remainingPercent(window);
-  const m = useMessages();
-  const resetsIn = formatResetsIn(window, now, m, "refill");
-  const credits = account.limits.resetCredits?.availableCount ?? 0;
-  const gt = useGT();
-  return (
-    <PopoverTrigger
-      handle={popover}
-      payload={payload}
-      style={{ gridColumn: "1 / -1", gridRow: index + 1 }}
-      render={<Button variant="ghost" size="compact" />}
-      className="min-w-0 @2xl/pool:hidden"
-    >
-      <span className="relative inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-3xs leading-none font-semibold text-foreground/80 tabular-nums">
-        <span
-          aria-hidden
-          className="absolute inset-0 rounded-sm opacity-35"
-          style={{ backgroundColor: color }}
-        />
-        <span className="sr-only">{`${gt("Segment")} `}</span>
-        <span className="relative">{index}</span>
-      </span>
-      <AccountName account={account} className="min-w-0 truncate font-medium text-foreground" />
-      <span className="shrink-0 font-semibold text-foreground tabular-nums">{remaining}%</span>
-      <span className="ms-auto flex shrink-0 items-center gap-1.5 text-2xs text-muted-foreground tabular-nums">
-        {resetsIn ?? ""}
-        {credits ? (
-          <>
-            {resetsIn ? <span aria-hidden>·</span> : null}
-            <span
-              aria-hidden
-              className="inline-flex items-center gap-0.5 font-semibold text-foreground"
-            >
-              <TicketIcon className="size-3" aria-hidden />
-              {credits}
-            </span>
-            <span className="sr-only">
-              {gt(
-                "{count, plural, one {{count} reset credit banked} other {{count} reset credits banked}}",
-                { count: credits },
-              )}
-            </span>
-          </>
-        ) : null}
-      </span>
+      ) : null}
     </PopoverTrigger>
   );
 }
@@ -554,39 +476,28 @@ function PoolBar({
   const restores = new Map(pool.resets.map((reset) => [reset.member.account.key, reset]));
   const gt = useGT();
   return (
-    <div className="@container/pool min-w-0">
-      <div
-        className="grid gap-x-1 gap-y-1"
-        style={{ gridTemplateColumns: `repeat(${pool.columns.length}, minmax(0, 1fr))` }}
-      >
-        {pool.columns.map((member, position) =>
-          member.window ? (
-            <PoolSegment
-              key={member.account.key}
-              account={member.account}
-              window={member.window}
-              reset={restores.get(member.account.key)}
-              refillPercent={member.refillPercent}
-              color={normalizeProviderAccentColor(member.account.accentColor) ?? color}
-              now={now}
-              index={position + 1}
-              showAccountName={pool.columns.length > 1}
-            />
-          ) : pool.kind === "monthly" && member.account.limits.zeroSpendCap ? (
-            <div
-              key={member.account.key}
-              style={{ gridColumn: position + 1, gridRow: 1 }}
-              className="flex h-5 min-w-0 items-center justify-center gap-1.5 overflow-hidden rounded-md border border-dashed border-border text-3xs whitespace-nowrap text-muted-foreground @2xl/pool:h-8 @2xl/pool:justify-start @2xl/pool:px-2 @2xl/pool:text-xs"
-            >
-              <AccountName
-                account={member.account}
-                className="hidden min-w-0 truncate @2xl/pool:inline-flex"
-              />
-              {gt("$0 cap")}
-            </div>
-          ) : null,
-        )}
-      </div>
+    <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,11rem),1fr))] items-stretch gap-2">
+      {pool.columns.map((member) =>
+        member.window ? (
+          <PoolSegment
+            key={member.account.key}
+            account={member.account}
+            window={member.window}
+            reset={restores.get(member.account.key)}
+            refillPercent={member.refillPercent}
+            color={normalizeProviderAccentColor(member.account.accentColor) ?? color}
+            now={now}
+          />
+        ) : pool.kind === "monthly" && member.account.limits.zeroSpendCap ? (
+          <div
+            key={member.account.key}
+            className="flex min-w-0 items-center justify-between gap-2 rounded-md border border-dashed border-border px-2.5 py-2 text-xs text-muted-foreground"
+          >
+            <AccountName account={member.account} className="min-w-0 truncate" />
+            <span className="shrink-0">{gt("$0 cap")}</span>
+          </div>
+        ) : null,
+      )}
     </div>
   );
 }
@@ -604,7 +515,11 @@ function PoolWindowCard({
   readonly label?: string | null | undefined;
   readonly description?: string | undefined;
 }) {
-  const nextRefill = pool.resets.find((reset) => reset.restoresPercent > 0);
+  const timestampFormat = usePrimarySettings((settings) => settings.timestampFormat);
+  const gt = useGT();
+  const m = useMessages();
+  const nextRefill = pool.resets.find((reset) => reset.at > now && reset.restoresPercent > 0);
+  const refillAt = nextRefill?.member.window.resetsAt;
   return (
     <div className="grid items-center gap-x-6 gap-y-3 rounded-lg border border-border/60 p-4 md:grid-cols-[11rem_minmax(0,1fr)]">
       <div className="flex flex-col gap-1">
@@ -622,9 +537,15 @@ function PoolWindowCard({
             {pool.pace ? <PaceIcon pace={pool.pace} /> : null}
           </span>
         </span>
-        {nextRefill && pool.columns.length > 1 ? (
-          <span className="text-xs font-medium text-foreground tabular-nums">
-            ↻ +{nextRefill.restoresPercent}%
+        {nextRefill && refillAt && pool.members.length > 1 ? (
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {gt("Resets", { $context: "when the usage window resets" })}{" "}
+            <time dateTime={refillAt} className="font-medium text-foreground">
+              {formatUpcomingTimestamp(refillAt, timestampFormat, now, undefined, m)}
+            </time>{" "}
+            <span className="whitespace-nowrap font-medium text-foreground">
+              (+{nextRefill.restoresPercent}%)
+            </span>
           </span>
         ) : null}
       </div>

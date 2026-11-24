@@ -7,6 +7,8 @@ import {
 import { CHATGPT_USAGE_URL } from "@t3tools/shared/usageLimits";
 import { describe, expect, it } from "vite-plus/test";
 
+import "~/index.css";
+
 import { render } from "../../../test/render";
 import { UsageLimitsPooled } from "./UsageLimitsPooled";
 
@@ -61,5 +63,63 @@ describe("UsageLimitsPooled ChatGPT usage card", () => {
     await expect
       .element(screen.getByText("View usage in ChatGPT with your connected account."))
       .toBeVisible();
+  });
+});
+
+describe("UsageLimitsPooled reset times", () => {
+  it("keeps individual reset times visible in a narrow, multi-account pool", async () => {
+    const now = Date.parse(checkedAt);
+    const accounts = Array.from({ length: 8 }, (_, index) => {
+      const resetsAt = new Date(now + (index + 1) * 3_600_000).toISOString();
+      return {
+        provider: {
+          ...managedChatGpt(`codex_${index}`, `Codex ${index + 1}`),
+          usageLimits: {
+            checkedAt,
+            windows: [
+              {
+                id: "weekly",
+                kind: "weekly",
+                label: "Weekly",
+                usedPercent: 40,
+                resetsAt,
+              },
+            ],
+          },
+        } satisfies ServerProvider,
+        resetsAt,
+        countdown: `resets in ${index + 1}h 0m`,
+      };
+    });
+    const presentations = new Map([
+      [
+        EnvironmentId.make("desk"),
+        {
+          entry: { target: { label: "Desk" } },
+          serverConfig: { providers: accounts.map(({ provider }) => provider) },
+        },
+      ],
+    ]);
+    const container = document.createElement("div");
+    container.style.width = "320px";
+    await using screen = await render(
+      <UsageLimitsPooled presentations={presentations} now={now} />,
+      { container },
+    );
+
+    expect(container.querySelector("time")?.dateTime).toBe(accounts[0]?.resetsAt);
+    await expect.element(screen.getByText("(+5%)", { exact: true })).toBeVisible();
+    for (const { provider, resetsAt, countdown } of accounts) {
+      const account = screen.getByRole("button", {
+        name: new RegExp(`^${provider.displayName}: 60% left,`),
+      });
+      await expect.element(account.getByText(countdown, { exact: true })).toBeVisible();
+      const accountElement = account.element();
+      const resetTime = accountElement.querySelector("time");
+      expect(resetTime?.dateTime).toBe(resetsAt);
+      expect(resetTime?.textContent).toBeTruthy();
+      expect(accountElement.scrollWidth).toBeLessThanOrEqual(accountElement.clientWidth);
+    }
+    expect(container.scrollWidth).toBeLessThanOrEqual(container.clientWidth);
   });
 });
