@@ -1579,6 +1579,10 @@ export function createServerEnvironmentAtoms<R, E>(
       label: "environment-data:chatgpt:import-profile",
       tag: WS_METHODS.chatGptImportProfile,
     }),
+    importCodexAccount: createEnvironmentRpcCommand(runtime, {
+      label: "environment-data:codex:import-account",
+      tag: WS_METHODS.codexImportAccount,
+    }),
     chatGptHandoffState: createEnvironmentSubscriptionAtomFamily(runtime, {
       label: "environment-data:chatgpt:handoff",
       sensitiveInput: true,

@@ -123,8 +123,8 @@ activity.
 
 ## Accounts and removal
 
-Add an Antigravity provider instance for each Google account in
-**Settings > Providers** on web or desktop. Each has its own sign-in; downloaded
+Add an Antigravity provider instance for each Google account from **Settings >
+Providers > Provider accounts** on web or desktop. Each has its own sign-in; downloaded
 runtimes are shared on the environment.
 
 | Action                    | Effect                                                            |

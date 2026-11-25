@@ -80,6 +80,7 @@ export const RPC_REQUIRED_SCOPES = {
   [WS_METHODS.providerMcpSignInComplete]: AuthProvidersManageScope,
   [WS_METHODS.chatGptReconnectProfile]: AuthProvidersManageScope,
   [WS_METHODS.chatGptImportProfile]: AuthProvidersManageScope,
+  [WS_METHODS.codexImportAccount]: AuthProvidersManageScope,
   [WS_METHODS.chatGptHandoffSubscribe]: AuthProvidersManageScope,
   [WS_METHODS.providerAuthRespond]: AuthProvidersManageScope,
   [WS_METHODS.providerAuthCancel]: AuthProvidersManageScope,

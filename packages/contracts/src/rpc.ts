@@ -38,6 +38,7 @@ import {
   ChatGptReconnectProfileInput,
   ChatGptReconnectProfile,
   ChatGptImportProfileInput,
+  CodexImportAccountInput,
   ChatGptHandoffInput,
   ChatGptHandoffState,
 } from "./providerSetup.ts";
@@ -528,6 +529,7 @@ export const WS_METHODS = {
   providerAuthComplete: "provider.auth.complete",
   chatGptReconnectProfile: "provider.chatgpt.reconnect-profile",
   chatGptImportProfile: "provider.chatgpt.import-profile",
+  codexImportAccount: "provider.codex.import-account",
   chatGptHandoffSubscribe: "provider.chatgpt.handoff.subscribe",
   providerAuthRespond: "provider.auth.respond",
   providerAuthCancel: "provider.auth.cancel",
@@ -850,6 +852,11 @@ const WsChatGptImportProfileRpc = Rpc.make(WS_METHODS.chatGptImportProfile, {
   payload: ChatGptImportProfileInput,
   success: ProviderAuthState,
   error: ProviderSetupRpcError,
+});
+const WsCodexImportAccountRpc = Rpc.make(WS_METHODS.codexImportAccount, {
+  payload: CodexImportAccountInput,
+  success: ProviderInstanceId,
+  error: Schema.Union([ServerSettingsError, ProviderSetupRpcError]),
 });
 const WsChatGptHandoffSubscribeRpc = Rpc.make(WS_METHODS.chatGptHandoffSubscribe, {
   payload: ChatGptHandoffInput,
@@ -2500,6 +2507,7 @@ export const WsRpcGroup = RpcGroup.make(
   WsProviderAuthCompleteRpc,
   WsChatGptReconnectProfileRpc,
   WsChatGptImportProfileRpc,
+  WsCodexImportAccountRpc,
   WsChatGptHandoffSubscribeRpc,
   WsProviderAuthRespondRpc,
   WsProviderAuthCancelRpc,

@@ -67,6 +67,12 @@ Add another ChatGPT account in **Settings → Providers**, then select the accou
 from the thread's model picker. Compatible accounts can continue the same thread.
 Connecting accounts through T3 Code leaves your CLI login unchanged.
 
+In **Settings → Providers → Provider accounts**, use **Import Codex auth.json**
+to add a ChatGPT login from a Codex CLI authentication file. The selected
+environment needs the Codex CLI on its PATH. Import a separate login file for each
+account. Codex keeps the imported login in its own directory on that environment.
+Use the account's provider settings to remove it when you no longer need it.
+
 ### Multiple CLI logins
 
 A shared Codex home with a shadow home lets work and personal accounts continue

@@ -9,6 +9,14 @@ import {
 } from "./baseSchemas.ts";
 import { ProviderDriverKind, ProviderInstanceId } from "./providerInstance.ts";
 
+export const MAX_CODEX_AUTH_FILE_BYTES = 256 * 1024;
+
+export const CodexImportAccountInput = Schema.Struct({
+  displayName: TrimmedNonEmptyString.check(Schema.isMaxLength(80)),
+  authJson: Schema.RedactedFromValue(Schema.String),
+});
+export type CodexImportAccountInput = typeof CodexImportAccountInput.Type;
+
 export const ProviderSetupInput = Schema.Struct({
   instanceId: ProviderInstanceId,
 });

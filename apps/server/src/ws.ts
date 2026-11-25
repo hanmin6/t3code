@@ -204,6 +204,10 @@ import * as ServerRuntimeStartup from "./serverRuntimeStartup.ts";
 import * as SecretResolver from "@t3tools/secret-provider-core/server/SecretResolver";
 import * as ManagedProviders from "./policy/managedProviders.ts";
 import * as ServerSettings from "./serverSettings.ts";
+import {
+  importCodexAccount,
+  removeImportedCodexCredentials,
+} from "./provider/CodexAuthFileImport.ts";
 import { invalidateSettingsSecrets } from "./sourceControl/sourceControlHostSecrets.ts";
 import * as DatabaseStorage from "./persistence/DatabaseStorage.ts";
 import * as StorageCleanup from "./storageCleanup.ts";
@@ -2791,6 +2795,7 @@ export const layerWsRpc = (
           providerAuth.complete(input, currentSessionId),
         [WS_METHODS.chatGptReconnectProfile]: (input) => providerAuth.reconnectProfile(input),
         [WS_METHODS.chatGptImportProfile]: (input) => providerAuth.importProfile(input),
+        [WS_METHODS.codexImportAccount]: (input) => importCodexAccount(input),
         [WS_METHODS.chatGptHandoffSubscribe]: (input) =>
           subscribeChatGptHandoff(input, currentSessionId),
         [WS_METHODS.providerAuthCancel]: (input) => providerAuth.cancel(input, currentSessionId),
@@ -2861,6 +2866,13 @@ export const layerWsRpc = (
             const settings = yield* providerInstanceMutation === undefined
               ? serverSettings.updateSettings(nextPatch)
               : serverSettings.updateProviderInstance(providerInstanceMutation, nextPatch);
+            if (providerInstanceMutation?.operation === "remove") {
+              yield* removeImportedCodexCredentials(providerInstanceMutation.instanceId).pipe(
+                Effect.catch(() =>
+                  Effect.logWarning("Could not remove the imported Codex authentication file."),
+                ),
+              );
+            }
             return ServerSettings.redactServerSettingsForClient(settings, settingsClient);
           }),
         [WS_METHODS.serverDiscoverSourceControl]: (_input) => sourceControlDiscovery.discover,

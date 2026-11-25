@@ -12913,5 +12913,20 @@
   "201490988858b511": "{by}에서 철회함",
   "99451a5d2d40440f": "{by}에서 철회했습니다.",
   "3ee30a50b70fffab": "{by}에서 철회했습니다: {reason}",
-  "92e129bf413a1220": "철회됨"
+  "92e129bf413a1220": "철회됨",
+  "78ca82fca54a2fa5": "Provider accounts",
+  "77220b624b20b7a0": "Connect a Codex or Antigravity account",
+  "100dc0b266b1bbf8": "Choose a connected account from the model picker when starting a thread.",
+  "93cacf45022e70f0": "Signed in",
+  "f34f03bd528f8d85": "{window}: {percent}% left",
+  "72e3dd143f36370f": "Import Codex auth.json",
+  "c9c232b5197b1227": "Import a ChatGPT login from the Codex CLI into a separate account on this device.",
+  "f2d81a0d626b989b": "The Codex authentication file is too large.",
+  "c5edb947c9383372": "Could not import this file. Choose an auth.json from a ChatGPT login in the Codex CLI.",
+  "cf0b20947a9f61f1": "Could not read the selected file.",
+  "15c2843fe84324a0": "Import account",
+  "ec9bd6ba2a8bdb22": "Import Codex auth.json",
+  "ce6084c0f96785a8": "View account",
+  "1817338466b4de14": "Account name",
+  "41413387ee5cfee5": "Codex authentication file"
 }

@@ -48,6 +48,7 @@ const RPC_AGGREGATES = {
   [WS_METHODS.providerMcpSignInComplete]: "provider",
   [WS_METHODS.chatGptReconnectProfile]: "provider",
   [WS_METHODS.chatGptImportProfile]: "provider",
+  [WS_METHODS.codexImportAccount]: "provider",
   [WS_METHODS.chatGptHandoffSubscribe]: "provider",
   [WS_METHODS.providerAuthRespond]: "provider",
   [WS_METHODS.providerAuthCancel]: "provider",

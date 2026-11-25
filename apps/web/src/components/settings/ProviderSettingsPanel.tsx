@@ -3,6 +3,7 @@ import { RefreshIcon } from "~/components/ui/refresh-icon";
 import {
   AuthSettingsWriteScope,
   AuthProvidersManageScope,
+  isManagedDriverAllowed,
   AuthOrchestrationReadScope,
 } from "@t3tools/contracts";
 import { useEnvironmentScope, readEnvironmentScope } from "../../state/session";
@@ -96,6 +97,7 @@ import { ScrollArea } from "../ui/scroll-area";
 import { Toggle, ToggleGroup } from "../ui/toggle-group";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { stackedThreadToast, toastManager } from "../ui/toast";
+import { ProviderAccountsSection } from "./ProviderAccountsSection";
 import { AddProviderInstanceDialog } from "./AddProviderInstanceDialog";
 import { useManagedPolicy } from "~/state/managedPolicy";
 import { ExpandableText } from "./ExpandableText";
@@ -608,7 +610,15 @@ export function EnvironmentProviderSettings({
     reportFailure: false,
   });
   const [isRefreshingProviders, setIsRefreshingProviders] = useState(false);
-  const [isAddInstanceDialogOpen, setIsAddInstanceDialogOpen] = useState(false);
+  const [addDialog, setAddDialog] = useState<"accounts" | "providers" | null>(null);
+  const providerDetail = useRef<HTMLDivElement>(null);
+  const canManageAccounts =
+    useEnvironmentScope(environmentId, AuthProvidersManageScope) && !readOnly;
+  const codexAllowed = isManagedDriverAllowed(managedPolicy, ProviderDriverKind.make("codex"));
+  const antigravityAllowed = isManagedDriverAllowed(
+    managedPolicy,
+    ProviderDriverKind.make("antigravity"),
+  );
   const [selectedInstanceId, setSelectedInstanceId] = useState<ProviderInstanceId | null>(
     targetInstanceId ?? null,
   );
@@ -1022,8 +1032,24 @@ export function EnvironmentProviderSettings({
     );
   };
 
+  const selectAccount = (id: ProviderInstanceId) => {
+    setSelectedInstanceId(id);
+    providerDetail.current?.scrollIntoView({ block: "nearest" });
+  };
+
   return (
     <>
+      <ProviderAccountsSection
+        key={environmentId}
+        environmentId={environmentId}
+        accounts={serverProviders.filter(
+          (provider) => provider.driver === "codex" || provider.driver === "antigravity",
+        )}
+        canAddAccount={canManageAccounts && (codexAllowed || antigravityAllowed)}
+        canImportCodex={canManageAccounts && codexAllowed}
+        onAddAccount={() => setAddDialog("accounts")}
+        onSelectAccount={selectAccount}
+      />
       <SettingsSection
         {...searchableSetting("providers")}
         variant="plain"
@@ -1035,7 +1061,7 @@ export function EnvironmentProviderSettings({
                   <Button
                     size="icon-xs"
                     variant="ghost-muted"
-                    onClick={() => setIsAddInstanceDialogOpen(true)}
+                    onClick={() => setAddDialog("providers")}
                     aria-label={gt("Add provider")}
                   >
                     <PlusIcon />
@@ -1116,7 +1142,7 @@ export function EnvironmentProviderSettings({
                   <button
                     type="button"
                     className="flex w-full cursor-pointer items-center gap-3 px-3 py-3 text-left text-sm text-muted-foreground transition-colors outline-none hover:bg-muted/25 hover:text-foreground focus-visible:bg-muted/25 focus-visible:text-foreground sm:px-4"
-                    onClick={() => setIsAddInstanceDialogOpen(true)}
+                    onClick={() => setAddDialog("providers")}
                   >
                     <PlusIcon className="size-4 shrink-0" />
                     <T>Add provider</T>
@@ -1126,7 +1152,11 @@ export function EnvironmentProviderSettings({
             </ScrollArea>
           </div>
 
-          <div data-provider-detail className="min-w-0 @min-[48rem]/providers:min-h-0">
+          <div
+            data-provider-detail
+            ref={providerDetail}
+            className="min-w-0 @min-[48rem]/providers:min-h-0"
+          >
             {selectedRow ? (
               <ScrollArea scrollFade chainVerticalScroll className="@min-[48rem]/providers:h-full">
                 {/* Flat sections run dividers edge to edge and inset text like the list beside them. */}
@@ -1239,13 +1269,16 @@ export function EnvironmentProviderSettings({
         <CompactIdleThreadsRow />
       </SettingsSection>
 
-      {isAddInstanceDialogOpen && !readOnly ? (
+      {addDialog && !readOnly ? (
         <AddProviderInstanceDialog
           open
+          accountProvidersOnly={addDialog === "accounts"}
           environmentId={environmentId}
           environmentLabel={environmentLabel}
-          onOpenChange={setIsAddInstanceDialogOpen}
-          onCreated={setSelectedInstanceId}
+          onOpenChange={(open) => {
+            if (!open) setAddDialog(null);
+          }}
+          onCreated={addDialog === "accounts" ? selectAccount : setSelectedInstanceId}
         />
       ) : null}
     </>

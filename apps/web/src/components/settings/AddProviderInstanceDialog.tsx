@@ -153,6 +153,7 @@ interface AddProviderInstanceDialogProps {
   readonly onCreated?: (instanceId: ProviderInstanceId, driver: ProviderDriverKind) => void;
   /** Opens with "Show more" expanded, so the ACP Registry search is in view. */
   readonly showMoreProviders?: boolean;
+  readonly accountProvidersOnly?: boolean;
 }
 
 export function AddProviderInstanceDialog({
@@ -162,6 +163,7 @@ export function AddProviderInstanceDialog({
   onOpenChange,
   onCreated,
   showMoreProviders: initialShowMoreProviders = false,
+  accountProvidersOnly = false,
 }: AddProviderInstanceDialogProps) {
   const gt = useGT();
   const m = useMessages();
@@ -174,13 +176,22 @@ export function AddProviderInstanceDialog({
   const [addingChatGptAccount, setAddingChatGptAccount] = useState(false);
   // Drivers the administrator's policy leaves out are not offered at all.
   const managedPolicy = useManagedPolicy(environmentId);
-  const featuredDriverOptions = FEATURED_DRIVER_OPTIONS.filter((option) =>
-    isManagedDriverAllowed(managedPolicy, option.driverKind),
+  const featuredDriverOptions = (
+    accountProvidersOnly ? DRIVER_OPTIONS : FEATURED_DRIVER_OPTIONS
+  ).filter(
+    (option) =>
+      isManagedDriverAllowed(managedPolicy, option.driverKind) &&
+      (!accountProvidersOnly ||
+        option.driverKind === "codex" ||
+        option.driverKind === "antigravity"),
   );
-  const moreDriverOptions = MORE_DRIVER_OPTIONS.filter((option) =>
-    isManagedDriverAllowed(managedPolicy, option.driverKind),
-  );
-  const acpRegistryAllowed = isManagedDriverAllowed(managedPolicy, ACP_REGISTRY_DRIVER_KIND);
+  const moreDriverOptions = accountProvidersOnly
+    ? []
+    : MORE_DRIVER_OPTIONS.filter((option) =>
+        isManagedDriverAllowed(managedPolicy, option.driverKind),
+      );
+  const acpRegistryAllowed =
+    !accountProvidersOnly && isManagedDriverAllowed(managedPolicy, ACP_REGISTRY_DRIVER_KIND);
   const [driver, setDriver] = useState<ProviderDriverKind>(
     () =>
       (featuredDriverOptions[0] ?? moreDriverOptions[0])?.driverKind ??
